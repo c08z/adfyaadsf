@@ -1,0 +1,441 @@
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local orbitDistance = 9.5
+local orbitSpeed = 0
+local orbitAngle = 0
+local targetPlayerName = ""
+local isOrbiting = false
+local Window = OrionLib:MakeWindow({Name = "Survival Edgessey", HidePremium = false, IntroText = "Survival Edgessey", SaveConfig = true, ConfigFolder = "OrbitPlayer"})
+
+
+
+-- Values
+_G.AutoPickup = true
+_G.AutoBlood = false
+_G.AutoPlant = true
+_G.autoHarvest = true
+ _G.NoRain = true
+_G.autoHarvestRunning = true
+_G.nolag = true
+-- Functions
+function AutoPlant()
+    while _G.AutoPlant == true do
+    if _G.AutoPlant == true then
+        local Player = game:GetService("Players").LocalPlayer
+    for _, v in pairs(Workspace.Important.Deployables:GetChildren()) do
+        if v.Name == "Plant Box" and (Player.Character.Head.Position - v.PrimaryPart.Position).magnitude < 500 then
+            game.ReplicatedStorage.Events.InteractStructure:FireServer(v, "Bloodfruit")
+      
+        end
+end
+task.wait()
+end
+    end
+
+end
+
+	
+
+
+function AutoPickUp()
+	while _G.AutoPickUp == true do
+		
+	end
+end
+
+
+function AutoBlood()
+	while _G.AutoBlood == true do
+	if _G.AutoBlood == true then 
+	if game:GetService("Players").LocalPlayer.Character:FindFirstChild("Humanoid").Health< 100 then
+	game:GetService("ReplicatedStorage").Events.UseBagItem:FireServer("Bloodfruit") -- fruit
+	 end
+	  task.wait(0.15)
+   end
+end
+end
+
+
+function NoRain()
+    while _G.NoRain == true do
+        if _G.NoRain == true then
+for i,v in pairs(game:GetService("Workspace"):GetChildren()) do 
+    if v:IsA("BasePart") and  v.Name == "RainPart" then 
+        v:Destroy()	
+    end	    
+end
+end
+end
+end
+
+function nolag()
+local Terrain = workspace:FindFirstChildOfClass('Terrain')
+local Lighting = game:GetService("Lighting")
+Terrain.WaterWaveSize = 0
+Terrain.WaterWaveSpeed = 0
+Terrain.WaterReflectance = 0
+Lighting.GlobalShadows = false
+Lighting.FogEnd = 1000000
+for i,v in pairs(game:GetDescendants()) do
+    if v:IsA("Part") or v:IsA("UnionOperation") or v:IsA("MeshPart") or v:IsA("CornerWedgePart") or v:IsA("TrussPart") then
+        v.Material = "Plastic"
+        v.Reflectance = 0
+    elseif v:IsA("Decal") then
+        v.Transparency = 1
+    elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+        v.Lifetime = NumberRange.new(0)
+    elseif v:IsA("Explosion") then
+        v.BlastPressure = 1
+        v.BlastRadius = 1
+    end
+end
+end
+
+
+   
+function autoHarvest()
+	local deployablesFolder = workspace:WaitForChild("Important"):WaitForChild("Deployables")
+
+	while _G.autoHarvest do
+		local player = game.Players.LocalPlayer
+		local character = player and player.Character
+		local hrp = character and character:FindFirstChild("HumanoidRootPart")
+		if not hrp then return end
+
+		local hrpPosition = hrp.Position
+
+		local success, errorMessage = pcall(function()
+			local foundAny = false
+			for _, deployable in pairs(deployablesFolder:GetChildren()) do
+				if deployable:IsA("Model") and deployable.Name == "Plant Box" then
+					for _, item in pairs(deployable:GetChildren()) do
+						if item:IsA("Model") and item.Name == "Bloodfruit Bush" then
+							local part = item:FindFirstChildOfClass("Part")
+							if part and (hrpPosition - part.Position).Magnitude <= 30 then
+								local replicatedStorage = game:GetService("ReplicatedStorage")
+								local events = replicatedStorage:FindFirstChild("Events")
+								if events then
+									local pickupEvent = events:FindFirstChild("Pickup")
+									if pickupEvent then
+										pickupEvent:FireServer(item)
+										foundAny = true
+									end
+								end
+							end
+						end
+					end
+				end
+			end
+		end)
+
+		if not success then
+			warn("Error: " .. errorMessage)
+		end
+
+		wait(0.3)
+	end
+
+	autoHarvestRunning = false
+end
+
+if Value then
+	if not autoHarvestRunning then
+		autoHarvestRunning = true
+		spawn(autoHarvest)
+	end
+else
+	_G.autoHarvest = false
+	autoHarvestRunning = false
+end
+
+
+
+
+--MainTab
+
+
+local Tab = Window:MakeTab({
+	Name = "Main",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+Tab:AddToggle({
+	Name = "Auto Plant",
+	Default = false,
+	Callback = function(Value)
+		_G.AutoPlant = Value
+        AutoPlant()
+	end    
+})
+
+Tab:AddToggle({
+	Name = "Auto Harvest",
+	Default = false,
+	Callback = function(Value)
+		_G.autoHarvest = Value
+        autoHarvest()
+	end    
+})
+
+
+
+Tab:AddToggle({
+	Name = "Auto Heal",
+	Default = false,
+	Callback = function(Value)
+		_G.AutoBlood = Value
+        AutoBlood()
+	end    
+})
+ 
+Tab:AddToggle({
+	Name = "Auto Pickup",
+	Default = false,
+	Callback = function(Value)
+		if Value then
+			_G.AutoPickup = true
+			coroutine.wrap(function()
+				while _G.AutoPickup do
+					for _, item in pairs(game.Workspace.Important.Items:GetChildren()) do
+						local distance = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - item.Position).Magnitude
+						if distance <= 50 then
+							game:GetService("ReplicatedStorage").Events.Pickup:FireServer(item)
+						end
+					end
+					task.wait()
+				end
+			end)()
+		else
+			_G.AutoPickup = false
+		end
+	end    
+})
+
+--OrbitTab
+
+local MainTab = Window:MakeTab({
+	Name = "Player",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+
+MainTab:AddButton({
+	Name = "Expand Player Hitbox (Team Check)",
+	Callback = function()
+		local function expandPlayerHitbox()
+			local localPlayer = game.Players.LocalPlayer
+
+			for _, player in ipairs(game.Players:GetPlayers()) do
+				pcall(function()
+					if player ~= localPlayer and player.Team ~= localPlayer.Team and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+						local hitbox = player.Character:FindFirstChild("HumanoidRootPart")
+						if hitbox then
+							hitbox.Size = Vector3.new(10, 10, 10)
+							hitbox.CanCollide = false
+							hitbox.Transparency = 0.5
+							hitbox.Color = Color3.fromRGB(68, 0, 204)
+						end
+					end
+				end)
+			end
+		end
+
+		while true do
+			expandPlayerHitbox()
+			wait(1)
+		end
+	end
+})
+
+MainTab:AddButton({
+	Name = "Expand All Player Hitboxes",
+	Callback = function()
+		local function expandAllPlayerHitboxes()
+			local localPlayer = game.Players.LocalPlayer
+
+			for _, player in ipairs(game.Players:GetPlayers()) do
+				pcall(function()
+					if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+						local hitbox = player.Character:FindFirstChild("HumanoidRootPart")
+						if hitbox then
+							hitbox.Size = Vector3.new(10, 10, 10)
+							hitbox.CanCollide = false
+							hitbox.Transparency = 0.5
+							hitbox.Color = Color3.fromRGB(68, 0, 204)
+						end
+					end
+				end)
+			end
+		end
+
+		while true do
+			expandAllPlayerHitboxes()
+			wait(1)
+		end
+	end
+})
+
+local function updatePlayerDropdown()
+	local playerNames = {}
+	for _, otherPlayer in pairs(Players:GetPlayers()) do
+		table.insert(playerNames, otherPlayer.Name)
+	end
+	return playerNames
+end
+
+MainTab:AddDropdown({
+	Name = "Select Player",
+	Default = "",
+	Options = updatePlayerDropdown(),
+	Callback = function(Value)
+		targetPlayerName = Value
+	end    
+})
+
+MainTab:AddTextbox({
+	Name = "Speed",
+	Default = "1",
+	TextDisappear = true,
+	Callback = function(Value)
+		local newSpeed = tonumber(Value)
+		if newSpeed then
+			orbitSpeed = newSpeed
+		else
+			OrionLib:MakeNotification({
+				Name = "Invalid Number",
+				Content = "what?",
+				Image = "rbxassetid://4483345998",
+				Time = 5
+			})
+		end
+	end  
+})
+
+
+MainTab:AddToggle({
+	Name = "Orbit",
+    Default = false,
+	Callback = function(Value)
+		isOrbiting = Value
+	end    
+})
+
+local function getPlayerByName(name)
+	for _, otherPlayer in pairs(Players:GetPlayers()) do
+		if otherPlayer.Name == name then
+			return otherPlayer
+		end
+	end
+	return nil
+end
+
+
+RunService.Heartbeat:Connect(function(deltaTime)
+	if not isOrbiting then return end
+
+	local targetPlayer = getPlayerByName(targetPlayerName)
+	if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		local targetPosition = targetPlayer.Character.HumanoidRootPart.Position
+
+		-- Update orbit angle
+		orbitAngle = orbitAngle + orbitSpeed * deltaTime
+
+		-- Calculate new position
+		local offset = Vector3.new(
+			math.cos(orbitAngle) * orbitDistance,
+			0,
+			math.sin(orbitAngle) * orbitDistance
+		)
+
+		-- Set new position and orientation
+		humanoidRootPart.CFrame = CFrame.new(targetPosition + offset) * CFrame.Angles(0, orbitAngle + math.pi/2, 0)
+	end
+end)
+
+Players.PlayerAdded:Connect(function()
+	OrbitTab:UpdateDropdown({
+		Name = "Select Player",
+		Options = updatePlayerDropdown()
+	})
+end)
+
+Players.PlayerRemoving:Connect(function()
+	OrbitTab:UpdateDropdown({
+		Name = "Select Player",
+		Options = updatePlayerDropdown()
+	})
+end)
+
+--MiscTab
+
+local Misc = Window:MakeTab({
+	Name = "Misc",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+Misc:AddSlider({
+	Name = "Field Of View",
+	Min = 40,
+	Max = 140,
+	Default = 80,
+	Color = Color3.fromRGB(68, 0, 204),
+	Increment = 1,
+	ValueName = "FOV",
+	Callback = function(Value)
+		game.Workspace.CurrentCamera.FieldOfView  = Value
+	end    
+})
+
+Misc:AddButton({
+	Name = "Potato Mode",
+	Callback = function()
+        nolag()
+  	end    
+})
+
+Misc:AddButton({
+	Name = "Night only",
+	Callback = function()
+        game.Lighting.TimeOfDay = 3
+  	end    
+})
+
+Misc:AddSlider({
+	Name = "Brightness",
+	Min = 0.1,
+	Max = 3,
+	Default = 0.1,
+	Color = Color3.fromRGB(68, 0, 204),
+	Increment = 1,
+	ValueName = "Brightness",
+	Callback = function(Value)
+		game.Lighting.Brightness  = Value
+	end    
+})
+
+Misc:AddSlider({
+	Name = "FogEnd",
+	Min = 100,
+	Max = 4500,
+	Default = 2000,
+	Color = Color3.fromRGB(68, 0, 204),
+	Increment = 100,
+	ValueName = "FogEnd",
+	Callback = function(Value)
+		game.Lighting.FogEnd  = Value
+	end    
+})
+
+Misc:AddButton({
+	Name = "Infinite Yield",
+	Callback = function()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+  	end    
+})
